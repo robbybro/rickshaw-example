@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Basics | Rickshaw Example</title>
+
+    <!-- Rickshaw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.6.3/rickshaw.min.css">
+</head>
+<body>
+    <div class="graph-container">
+        <div id="graph"></div>
+        <div id="legend"></div>
+        <div id="preview-slider"></div>
+    </div>
+
+    <!-- jQuery -->
+    <script 
+    src="https://code.jquery.com/jquery-3.2.1.min.js" 
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" 
+    crossorigin="anonymous"></script>
+    <!-- jQuery UI -->
+    <script
+    src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+    integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+    crossorigin="anonymous"></script>
+    <!-- This Rickshaw current version is built on top of D3 version 3 -->
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <!-- Rickshaw -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.6.3/rickshaw.js"></script>
+    <script type="text/javascript">
+        // For a point, x value must be sorted.
+        var dataset1 = [
+            { x: 0, y: 10 },
+            { x: 1, y: 8 },
+            { x: 2, y: 3 },
+            { x: 3, y: 15 },
+            { x: 4, y: 12 },
+            { x: 5, y: 8 },
+            { x: 6, y: 3 },
+            { x: 7, y: 5 },
+            { x: 8, y: 2 },
+            { x: 9, y: 1 },
+            { x: 10, y: 4 }
+        ];
+
+        var dataset2 = [
+            { x: 0, y: 0 },
+            { x: 1, y: 3 },
+            { x: 2, y: 8 },
+            { x: 3, y: 6 },
+            { x: 4, y: 3 },
+            { x: 5, y: 12 },
+            { x: 6, y: 13 },
+            { x: 7, y: 14 },
+            { x: 8, y: 12 },
+            { x: 9, y: 8 },
+            { x: 10, y: 9 }
+        ];   
+
+        var graph = new Rickshaw.Graph({
+            element: document.querySelector("#graph"),
+            width: 500,
+            height: 250,
+            // renderer determines graph type
+            // such as lineplot, area, line, bar, scatterplot.
+            renderer: 'area',
+            series: [
+                {
+                    name: "Series 1",
+                    color: "steelblue",
+                    data: dataset1
+                },
+                {
+                    name: "Series 2",
+                    color: "green",
+                    data: dataset2
+                }
+            ]
+        });
+
+        // Add axis.
+        var xAxis = new Rickshaw.Graph.Axis.X({
+            graph: graph,
+            timeUnit: new Rickshaw.Fixtures.Time().unit("seconds")
+        });
+
+        var yAxis = new Rickshaw.Graph.Axis.Y({
+            graph: graph,
+        });
+
+        // To display details, add mouse hover to the graph.
+        var hoverDetail = new Rickshaw.Graph.HoverDetail({
+            graph: graph
+        });
+
+        // Add legend.
+        var legend = new Rickshaw.Graph.Legend({
+            graph: graph,
+            element: document.querySelector("#legend")
+        });
+
+        // Toggle each data series on and off on legend click.
+        var toggle = new Rickshaw.Graph.Behavior.Series.Toggle({
+            graph: graph,
+            legend: legend
+        });
+
+        // Highlight each data series on legend hover.
+        var highlight = new Rickshaw.Graph.Behavior.Series.Highlight({
+            graph: graph,
+            legend: legend
+        });
+
+        // Move legend up or down to change stack order (only on certain renderer).
+        var order = new Rickshaw.Graph.Behavior.Series.Order({
+            graph: graph,
+            legend: legend
+        });
+
+        //  Add preview slider.
+        var previewSlider = new Rickshaw.Graph.RangeSlider.Preview({
+            graph: graph,
+            element: document.querySelector("#preview-slider")
+        });
+
+        graph.render();
+    </script>
+</body>
+</html>

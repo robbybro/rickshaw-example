@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Real-Time Graph</title>
+
+    <!-- Rickshaw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.6.3/rickshaw.min.css">
+
+    <style>
+        html, body {
+            overflow-x: hidden;
+        }
+
+        button {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="graph-container">
+        <div id="graph"></div> 
+        <div id="legend"></div> 
+        <div id="preview-slider"></div>
+        <div id="range-slider"></div>
+    </div>
+    <button id="manual-add-btn">ADD DATA (MANUAL)</button>
+    <button id="auto-add-btn">ADD DATA (AUTO)</button>
+
+    <!-- jQuery -->
+    <script 
+    src="https://code.jquery.com/jquery-3.2.1.min.js" 
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" 
+    crossorigin="anonymous"></script>
+    <!-- jQuery UI -->
+    <script
+    src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+    integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+    crossorigin="anonymous"></script>
+    <!-- PubNub -->
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.15.1.js"></script>
+    <!-- D3 -->
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <!-- Rickshaw -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.6.3/rickshaw.js"></script>
+    <script type="text/javascript">
+
+        // Initialize client with both read and write permission.
+        var pubnub = new PubNub({
+            publishKey: "pub-c-8c0872fb-9d15-4451-a6df-9b05f1cfbb4e",
+            subscribeKey: "sub-c-8e1d2786-96ef-11e7-ae90-9e4639429209"
+        }); 
+
+        // Subscribe needs to be placed before publish.
+        pubnub.subscribe({
+            channels: ["rickshaw_example_channel"]
+        });
+
+        var publishConfig = { 
+            channel: "rickshaw_example_channel", 
+            // Add some starting fake data.
+            message: {
+                dataset1: [
+                    { x: 0, y: 10 },
+                    { x: 1, y: 8 },
+                    { x: 2, y: 3 },
+                    { x: 3, y: 15 },
+                    { x: 4, y: 12 },
+                    { x: 5, y: 8 },
+                    { x: 6, y: 3 },
+                    { x: 7, y: 5 },
+                    { x: 8, y: 2 },
+                    { x: 9, y: 1 },
+                    { x: 10, y: 4 }
+                ],
+                dataset2: [
+                    { x: 0, y: 0 },
+                    { x: 1, y: 3 },
+                    { x: 2, y: 8 },
+                    { x: 3, y: 6 },
+                    { x: 4, y: 3 },
+                    { x: 5, y: 12 },
+                    { x: 6, y: 13 },
+                    { x: 7, y: 14 },
+                    { x: 8, y: 12 },
+                    { x: 9, y: 8 },
+                    { x: 10, y: 9 }
+                ]
+            }
+        } 
+
+        // Publish our starting fake data.
+        pubnub.publish(publishConfig, function(status, response) { 
+            console.log("Starting data:", status, response); 
+        });
+
+        // Attach listener,
+        // when new data is published,
+        // update function will be fired.
+        pubnub.addListener({
+            message: function(m) {
+                var channelName = m.channel;
+                var msg = m.message;
+                update(msg);
+            }
+        });
+
+        // Keeps track of current datasets.
+        var currentDataset1 = [],
+            currentDataset2 = [];
+
+        var graph = null;
+        var xAxis,
+            yAxis,
+            hoverDetail,
+            legend,
+            toggle,
+            highlight,
+            previewSlider,
+            rangeSlider;
+
+        // Update function updates the graph when new data is comming in.
+        function update(msg) {
+
+            // Update current datasets.
+            currentDataset1 = currentDataset1.concat(msg.dataset1);
+            currentDataset2 = currentDataset2.concat(msg.dataset2);
+
+            // Initialize standard Rickshaw graph with starting data.
+            if(graph === null) {
+                graph = new Rickshaw.Graph({
+                    element: document.querySelector("#graph"),
+                    width: 800,
+                    height: 400,
+                    renderer: 'area',
+                    series: [
+                        {
+                            name: 'Series 1',
+                            color: 'steelblue',
+                            data: currentDataset1
+                        },
+                        {
+                            name: 'Series 2',
+                            color: 'lightblue',
+                            data: currentDataset2
+                        }
+                    ]
+                });
+
+                xAxis = new Rickshaw.Graph.Axis.X({
+                    graph: graph,
+                });
+        
+                yAxis = new Rickshaw.Graph.Axis.Y({
+                    graph: graph
+                });
+
+                hoverDetail = new Rickshaw.Graph.HoverDetail({
+                    graph: graph
+                });
+
+                legend = new Rickshaw.Graph.Legend({
+                    graph: graph,
+                    element: document.querySelector("#legend")
+                });
+
+                toggle = new Rickshaw.Graph.Behavior.Series.Toggle({
+                    graph: graph,
+                    legend: legend
+                });
+
+                highlight = new Rickshaw.Graph.Behavior.Series.Highlight({
+                    graph: graph,
+                    legend: legend
+                });
+
+                previewSlider = new Rickshaw.Graph.RangeSlider.Preview({
+                    graph: graph,
+                    element: document.querySelector("#preview-slider")
+                });
+
+                // No idea why it is not working as expected???
+                // rangeSlider = new Rickshaw.Graph.RangeSlider({
+                //     graph: graph,
+                //     element: document.querySelector('#range-slider')
+                // });
+                
+            } else {
+                // If graph has already been initialized,
+                // update the existing graph.
+                graph.series[0].data = currentDataset1;
+                graph.series[1].data = currentDataset2;
+            }
+
+            graph.render();
+        }
+
+        var $manualAddBtn = $("#manual-add-btn");
+        var $autoAddBtn = $("#auto-add-btn");
+
+        // Biggest value in x-axis.
+        var biggestX = 10;
+
+        var autoAdd = null;
+
+        $manualAddBtn.click(function() {
+            // Stop adding data automatically
+            // before we can add data manually.
+            if(autoAdd !== null) {
+                clearInterval(autoAdd);
+                autoAdd = null; 
+            }
+            addData();
+        });
+
+        $autoAddBtn.click(function() {
+            // Prevent the user from clicking the button multiple times in a row.
+            if(autoAdd === null) {
+                // Add new data every 1 second.
+                autoAdd = setInterval(addData, 1000); 
+            }
+        });
+
+        // addData function generates random data.
+        function addData() {
+            biggestX ++;
+
+            // Generate random y-axis values.
+            var y1 = Math.round(Math.random() * 10);
+            var y2 = Math.round(Math.random() * 10);
+
+            // Publish the data to the existing channel.
+            // Once the data is added successfully,
+            // the listener will trigger update function to update the graph.
+            pubnub.publish(
+                {
+                    channel: "rickshaw_example_channel", 
+                    message: { 
+                        dataset1: [{ x: biggestX, y: y1 }],
+                        dataset2: [{ x: biggestX, y: y2 }]
+                    }
+                },
+                function(status, response) {
+                    console.log("New data:", status, response);
+                }
+            );
+        }
+    </script>
+</body>
+</html>
